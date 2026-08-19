@@ -1,0 +1,41 @@
+# All three names people give a virtualenv, not only the one this repo uses.
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Your board's data is yours, not the repo's.
+*.db
+*.db-wal
+*.db-shm
+.blockers/
+
+# The board mints this to let sandboxed sessions in. It is a secret.
+token
+
+# Everything Claude Code keeps beside this repo: scratch worktrees, per-machine
+# permission grants, agent definitions, its own bookkeeping. All of it is about
+# one person's machine rather than about the project, and it grows new files
+# without asking, so the directory is ignored wholesale rather than a file at a
+# time. Un-ignore one deliberately if a shared version ever earns its place.
+.claude/
+
+# Session transcripts and logs. They quote whatever you were working on.
+*.jsonl
+*.log
+
+# Backups `install` takes of your Claude Code config before editing it, and
+# anything else that ends up beside a file someone was editing.
+*.claude-blockers.bak
+*.bak
+
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.idea/
+.vscode/
+.DS_Store

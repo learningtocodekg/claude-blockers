@@ -1,0 +1,48 @@
+[project]
+name = "claude-blockers"
+# Single-sourced from claude_blockers/__init__.py so a release cannot ship a
+# version the running code disagrees with.
+dynamic = ["version"]
+description = "A local board for everything your Claude Code sessions need you to do."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+keywords = ["claude", "claude-code", "mcp", "agents", "blockers"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Quality Assurance",
+]
+dependencies = [
+    "mcp>=1.2",
+]
+
+[project.urls]
+Homepage = "https://github.com/learningtocodekg/claude-blockers"
+Repository = "https://github.com/learningtocodekg/claude-blockers"
+Issues = "https://github.com/learningtocodekg/claude-blockers/issues"
+
+[project.scripts]
+claude-blockers = "claude_blockers.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "claude_blockers/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["claude_blockers"]
+
+[tool.hatch.build.targets.sdist]
+# The sdist is what a distro packager or `pip install --no-binary` builds from,
+# so it needs the tests too -- a source release you cannot verify is not much of
+# a source release.
+include = ["claude_blockers", "tests", "README.md", "LICENSE", "pyproject.toml"]

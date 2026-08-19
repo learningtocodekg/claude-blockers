@@ -1,0 +1,13 @@
+# setup.sh is run by bash, including on WSL and in containers, and bash does not
+# tolerate CRLF: a carriage return at the end of the shebang or of any line comes
+# back as `$'\r': command not found`. A Windows clone with core.autocrlf=true
+# would introduce exactly that, so pin the endings rather than relying on every
+# contributor's git config.
+*.sh        text eol=lf
+*.py        text eol=lf
+*.yml       text eol=lf
+
+# PowerShell is fine either way; keep it native so Windows editors leave it alone.
+*.ps1       text eol=crlf
+
+*.db        binary

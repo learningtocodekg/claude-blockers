@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Blockers</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛑</text></svg>">
+<!-- No webfont link on purpose. This board is sold on running entirely on your
+     machine, and it reads your project paths and transcript excerpts; fetching a
+     stylesheet from Google on every page load would tell them when you open it
+     and from where, and would make the board worse on a machine that is offline.
+     The stack in style.css uses IBM Plex if it is installed locally and falls
+     back to the system UI faces if not. -->
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- title bar -->
+  <header class="titlebar">
+    <span class="mark" aria-hidden="true"><i></i><i></i></span>
+    <span class="app-name">Claude Blockers</span>
+    <span class="open-pill" id="open-pill">0 open</span>
+
+    <span class="grow"></span>
+
+    <div class="notif">
+      <span class="notif-label">Notifications</span>
+      <button class="switch" id="notify-toggle" type="button" role="switch"
+              aria-checked="false" aria-label="Desktop notifications">
+        <span class="knob"></span>
+      </button>
+    </div>
+    <span class="vrule"></span>
+    <span class="pulse" id="pulse" aria-hidden="true"></span>
+    <span class="watching" id="watching">watching</span>
+  </header>
+
+  <div class="body">
+
+    <!-- sidebar -->
+    <aside class="sidebar" aria-label="Blockers">
+      <div class="side-head">
+        <button class="picker" id="menu-btn" type="button" aria-haspopup="true"
+                aria-expanded="false" aria-label="Sidebar view and project filter">
+          <span class="picker-text" id="view-label">Most recent</span>
+          <span class="picker-chev" aria-hidden="true"></span>
+        </button>
+        <div class="menu hidden" id="menu"></div>
+      </div>
+
+      <div class="scopes" id="scopes"></div>
+
+      <div class="side-list" id="side-list"></div>
+
+      <!-- The common case is one click; the caret is for the rarer scopes,
+           including the one that takes open blockers with it. -->
+      <div class="side-clear hidden" id="side-clear">
+        <div class="clear-split">
+          <button class="clear-btn" id="clear-btn" type="button">
+            Clear past blockers<span class="clear-count" id="clear-count"></span>
+          </button>
+          <button class="clear-more" id="clear-more" type="button" aria-haspopup="true"
+                  aria-expanded="false" aria-label="Choose what to delete">
+            <span class="picker-chev" aria-hidden="true"></span>
+          </button>
+        </div>
+        <div class="clear-menu hidden" id="clear-menu"></div>
+      </div>
+
+      <div class="side-foot">
+        <span class="foot-dot" id="foot-dot"></span>
+        <span id="foot-text">connecting&hellip;</span>
+      </div>
+    </aside>
+
+    <!-- detail -->
+    <main class="main">
+      <div class="tabbar" id="tabbar"></div>
+      <div class="detail-scroll" id="detail-scroll">
+        <div class="placeholder" id="placeholder">
+          <p class="ph-title">Nothing selected.</p>
+          <p class="ph-sub">Pick a blocker to see what it needs from you.</p>
+        </div>
+        <article class="detail hidden" id="detail"></article>
+      </div>
+    </main>
+  </div>
+
+  <footer class="statusbar" id="statusbar"></footer>
+</div>
+
+<div class="toast-stack" id="toasts" aria-live="polite"></div>
+
+<!-- confirm, for the one action that cannot be undone -->
+<div class="modal-wrap hidden" id="confirm-wrap">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+    <h2 class="modal-title" id="confirm-title"></h2>
+    <p class="modal-body" id="confirm-body"></p>
+    <div class="modal-actions">
+      <button class="btn" id="confirm-no" type="button">Keep them</button>
+      <button class="btn danger" id="confirm-yes" type="button">Delete permanently</button>
+    </div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

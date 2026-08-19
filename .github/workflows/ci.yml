@@ -1,0 +1,140 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / py${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Windows and Linux are both first-class here: sessions run natively on
+        # Windows and inside WSL/containers, and the two disagree about paths,
+        # process lifetime and how a terminal is reopened.
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.11", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ matrix.python }}
+          enable-cache: true
+
+      - name: Smoke tests
+        run: uv run --python ${{ matrix.python }} python tests/test_smoke.py
+
+      - name: Hook wiring
+        run: uv run --python ${{ matrix.python }} python tests/test_hook_wiring.py
+
+      - name: Claude Desktop wiring
+        run: uv run --python ${{ matrix.python }} python tests/test_desktop.py
+
+      # This one spawns the real stdio server and drives an initialize
+      # handshake, so it is also the check that the MCP entry point still starts
+      # at all on this platform and Python version.
+      - name: Guidance on every surface
+        run: uv run --python ${{ matrix.python }} python tests/test_guidance.py
+
+      # Drives a real socket to replay the attacks a hostile web page can make
+      # your browser send at the board. These were live once; keep them dead.
+      - name: Web attack surface
+        run: uv run --python ${{ matrix.python }} python tests/test_web_security.py
+
+      - name: WSL behaviour (interop is faked, so it runs anywhere)
+        run: uv run --python ${{ matrix.python }} python tests/test_wsl.py
+
+      # quickjs ships no Windows wheel and building it needs MSVC, so the
+      # browser-code test runs where a JS engine is actually installable.
+      - name: Sidebar ordering (runs the real app.js)
+        if: runner.os != 'Windows'
+        run: uv run --python ${{ matrix.python }} --with quickjs python tests/test_sidebar_order.py
+
+  setup-script:
+    name: setup.sh from a clean checkout
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+
+      # The advertised install path is "clone, run one script". If that breaks,
+      # nothing else in the README matters, so it gets exercised for real -- into
+      # a throwaway HOME so the runner's own config is not what is being tested.
+      # A clone gets whatever mode git recorded. If that is 644, `./setup.sh`
+      # is "Permission denied" for every user on every POSIX machine, and the
+      # author's Windows checkout (core.fileMode=false) cannot show it.
+      - name: setup.sh is executable as committed
+        run: test -x setup.sh || { echo "setup.sh lost its +x bit"; exit 1; }
+
+      - name: Run it the way the README says
+        run: |
+          export HOME="$(mktemp -d)"
+          export PATH="$HOME/.local/bin:$PATH"
+          ./setup.sh
+          command -v claude-blockers
+          claude-blockers --version
+          claude-blockers demo
+          claude-blockers status
+
+  setup-script-windows:
+    name: setup.ps1 from a clean checkout
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+
+      # Windows PowerShell 5.1, not pwsh -- that is what a Windows user double
+      # clicking into a terminal actually gets, and it differs enough from pwsh
+      # to hide real bugs.
+      - name: Run setup.ps1 under Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          $env:CLAUDE_CONFIG_DIR = Join-Path $env:RUNNER_TEMP "claudecfg"
+          .\setup.ps1 --home (Join-Path $env:RUNNER_TEMP "board")
+          if ($LASTEXITCODE -ne 0) { throw "setup.ps1 failed" }
+          claude-blockers --version
+          claude-blockers demo
+          claude-blockers status
+
+  build:
+    name: Build distributions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+
+      - run: uv build
+
+      # A wheel that is missing static/ still imports fine and then serves a
+      # blank page, so assert the assets are actually in there.
+      - name: Assert the board's assets shipped
+        run: |
+          python - <<'PY'
+          import zipfile, glob, sys
+          whl = glob.glob("dist/*.whl")[0]
+          names = zipfile.ZipFile(whl).namelist()
+          need = ["claude_blockers/static/index.html",
+                  "claude_blockers/static/app.js",
+                  "claude_blockers/static/style.css"]
+          missing = [n for n in need if n not in names]
+          print(whl, "->", len(names), "entries")
+          if missing:
+              sys.exit("MISSING FROM WHEEL: " + ", ".join(missing))
+          print("static assets present")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
